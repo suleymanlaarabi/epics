@@ -23,4 +23,7 @@ void ecs_vec_set(ecs_vec* v, size_t index, const void* elem);
 
 void *ecs_vec_emplace_back(ecs_vec* v);
 
+
+void ecs_vec_erase(ecs_vec* v, size_t index);
+
 #endif

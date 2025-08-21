@@ -33,6 +33,11 @@ namespace ecs {
             normalize();
         }
 
+        void removeComponent(ComponentID id) {
+            components.erase(std::remove(components.begin(), components.end(), id), components.end());
+            normalize();
+        }
+
         const std::vector<ComponentID>& getComponents() const {
             return components;
         }

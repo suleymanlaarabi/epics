@@ -2,7 +2,7 @@
     #define ECS_WORLD_HPP
     #include <unordered_map>
     #include "archetype.hpp"
-#include "component.hpp"
+    #include "component.hpp"
     #include "ecs_fwd.hpp"
 
 namespace ecs {
@@ -21,16 +21,25 @@ namespace ecs {
 
             Entity entity() {
                 this->entity_count += 1;
-                entity_index[entity_count] = &getArchetype<>();
-                return this->entity_count;
+                Archetype* archetype = &getArchetype<>();
+                entity_index[entity_count] = archetype;
+                archetype->addEntity(entity_count);
+                return entity_count;
             }
 
             template<typename Component>
             void addComponent(Entity entity) {
-                EntityType type = getEntityType(entity);
-                type.addComponent<Component>();
-                Archetype& archetype = getArchetype(type);
-                entity_index[entity] = &archetype;
+
+                if (hasComponent<Component>(entity)) {
+                    return;
+                } else {
+                    Archetype &archetype = getArchetype(entity);
+                    EntityType type = archetype.type;
+                    type.addComponents<Component>();
+                    Archetype &newArchetype = getArchetype(type);
+                    newArchetype.addEntity(entity);
+                    entity_index[entity] = &newArchetype;
+                }
             }
 
             template<typename Component>
@@ -47,9 +56,20 @@ namespace ecs {
             }
 
             template<typename Component>
-            Component* getComponent(Entity entity) {
-                EntityType type = getEntityType(entity);
+            void removeComponent(Entity entity) {
+                Archetype& old_archetype = getArchetype(entity);
+                old_archetype.removeEntity(entity);
+
+                EntityType type = old_archetype.type;
+                type.removeComponent(getComponentID<Component>());
                 Archetype& archetype = getArchetype(type);
+                entity_index[entity] = &archetype;
+                archetype.addEntity(entity);
+            }
+
+            template<typename Component>
+            Component* getComponent(Entity entity) {
+                Archetype& archetype = getArchetype(entity);
                 return archetype.getComponent<Component>(entity);
             }
 

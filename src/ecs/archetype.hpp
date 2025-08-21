@@ -49,6 +49,16 @@ namespace ecs {
             }
         }
 
+        void removeEntity(Entity entity) {
+            uint64_t index = this->entity_indices[entity];
+
+            this->entities.erase(this->entities.begin() + index);
+            this->entity_indices.erase(entity);
+            for (auto id : this->type.getComponents()) {
+                ecs_vec_erase(&this->components_vec[id], index);
+            }
+        }
+
         template<typename Component>
         Component* getComponentArray() {
             ComponentID id = getComponentID<Component>();

@@ -38,6 +38,16 @@ void ecs_vec_pop(ecs_vec* v) {
     if (v->size > 0) v->size--;
 }
 
+void ecs_vec_erase(ecs_vec* v, size_t index) {
+    if (index >= v->size) return;
+    if (index < v->size - 1) {
+        memmove((char*)v->data + index * v->elem_size,
+                (char*)v->data + (index + 1) * v->elem_size,
+                (v->size - index - 1) * v->elem_size);
+    }
+    v->size--;
+}
+
 void* ecs_vec_get(ecs_vec* v, size_t index) {
     assert(index < v->size && "Index out limit");
     return (char*)v->data + index * v->elem_size;
