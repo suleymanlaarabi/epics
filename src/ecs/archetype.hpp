@@ -50,11 +50,34 @@ namespace ecs {
         }
 
         template<typename Component>
+        Component* getComponentArray() {
+            ComponentID id = getComponentID<Component>();
+            return static_cast<Component*>(this->components_vec[id].data);
+        }
+
+        template<typename Component>
         void addComponent() {
             ComponentID id = getComponentID<Component>();
             this->type.addComponent(id);
             this->type_set.insert(id);
         }
+
+        template<typename Component>
+        Component* getComponent(Entity entity) {
+            ComponentID id = getComponentID<Component>();
+            Component* components = static_cast<Component*>(this->components_vec[id].data);
+            uint64_t index = this->entity_indices[entity];
+            return &components[index];
+        }
+
+        template<typename Component>
+        void setComponent(Entity entity, Component&& component) {
+            ComponentID id = getComponentID<Component>();
+            Component* components = static_cast<Component*>(this->components_vec[id].data);
+            uint64_t index = this->entity_indices[entity];
+            components[index] = std::forward<Component>(component);
+        }
+
     };
 }
 

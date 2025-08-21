@@ -2,6 +2,7 @@
     #define ECS_WORLD_HPP
     #include <unordered_map>
     #include "archetype.hpp"
+#include "component.hpp"
     #include "ecs_fwd.hpp"
 
 namespace ecs {
@@ -30,6 +31,26 @@ namespace ecs {
                 type.addComponent<Component>();
                 Archetype& archetype = getArchetype(type);
                 entity_index[entity] = &archetype;
+            }
+
+            template<typename Component>
+            void setComponent(Entity entity, Component&& component) {
+                Archetype& archetype = getArchetype(entity);
+
+                if (hasComponent<Component>(entity)) {
+                    archetype.setComponent<Component>(entity, std::forward<Component>(component));
+                } else {
+                    addComponent<Component>(entity);
+                    archetype = getArchetype(entity);
+                    archetype.setComponent(entity, std::forward<Component>(component));
+                }
+            }
+
+            template<typename Component>
+            Component* getComponent(Entity entity) {
+                EntityType type = getEntityType(entity);
+                Archetype& archetype = getArchetype(type);
+                return archetype.getComponent<Component>(entity);
             }
 
             template<typename Component>
@@ -63,6 +84,11 @@ namespace ecs {
                     auto res = archetype_index.insert({type, Archetype::create(type)});
                     return res.first->second;
                 }
+            }
+
+            Archetype &getArchetype(Entity entity) {
+                Archetype* arch = entity_index[entity];
+                return *arch;
             }
     };
 }

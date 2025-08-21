@@ -13,12 +13,11 @@ int main() {
 
     ecs::Entity entity = world.entity();
 
-
+    world.setComponent(entity, Position{10.0, 0.0});
     std::cout << "Has component Position: " << world.hasComponent<Position>(entity) << "\n";
 
-    world.addComponent<Position>(entity);
-
-    std::cout << "Has component Position: " << world.hasComponent<Position>(entity) << "\n";
+    Position *pos = world.getComponent<Position>(entity);
+    std::cout << "Position: " << pos->x << ", " << pos->y << "\n";
 
     std::cout << "Position ID: " << ecs::getComponentID<Position>() << "\n";
     std::cout << "Velocity ID: " << ecs::getComponentID<Velocity>() << "\n";
