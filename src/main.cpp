@@ -1,32 +1,29 @@
-#include "ecs/world.hpp"
+#include "ecs_entity.hpp"
 #include <cassert>
-#include <cstddef>
-#include <stdio.h>
+#include <ecs_world.hpp>
+#include <sparseset.hpp>
 
 
-struct Position { double x, y; };
-struct Velocity { float dx, dy; };
+struct Position {
+    float x, y;
+};
+
+struct Velocity {
+    float x, y;
+};
 
 int main() {
     ecs::World world;
 
     ecs::Entity entity = world.entity();
 
-    assert(entity == 1);
+    world.add(entity, Position {10, 10});
+    world.add(entity, Velocity {1, 1});
 
-    world.addComponent<Position>(entity);
+    world.system<Position, Velocity>([](Position &pos, Velocity &vel) {
+        pos.x += vel.x;
+        pos.y += vel.y;
+    });
 
-    assert(world.hasComponent<Position>(entity));
-
-    world.removeComponent<Position>(entity);
-
-    assert(!world.hasComponent<Position>(entity));
-
-    world.setComponent(entity, Position {10, 0});
-
-    assert(world.hasComponent<Position>(entity));
-
-    Position *pos = world.getComponent<Position>(entity);
-
-    assert(pos->x == 10 && pos->y == 0);
+    world.progress();
 }

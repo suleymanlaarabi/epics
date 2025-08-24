@@ -1,14 +1,33 @@
-cmake_minimum_required(VERSION 3.16)
-project(ecs LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.15)
+
+project(epics LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra -pedantic")
+add_subdirectory(libs/datastructure)
+add_subdirectory(libs/ecs)
+add_subdirectory(libs/rayflect)
 
-file(GLOB_RECURSE SRC "src/*.cpp")
+add_executable(${PROJECT_NAME} src/main.cpp)
 
-add_executable(main ${SRC})
+target_link_libraries(${PROJECT_NAME} PRIVATE ecs rayflect datastructure)
 
-target_include_directories(main PRIVATE src)
+# Testing
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/ecs/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/rayflect/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/datastructure/*.cpp
+)
+
+add_executable(unit_tests ${TEST_SOURCES})
+
+find_library(CRITERION_LIB criterion PATHS /opt/homebrew/lib /usr/local/lib REQUIRED)
+
+target_include_directories(unit_tests SYSTEM PRIVATE /opt/homebrew/include /usr/local/include)
+target_link_libraries(unit_tests PRIVATE ${CRITERION_LIB} ecs rayflect datastructure)
+
+
+enable_testing()
+add_test(NAME run_unit_tests COMMAND unit_tests)
