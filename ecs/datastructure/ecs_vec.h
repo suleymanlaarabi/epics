@@ -1,19 +1,13 @@
-#ifndef VEC_H
-    #define VEC_H
+#ifndef ECS_VEC_H
+    #define ECS_VEC_H
 
-    #include <cstddef>
     #include <stddef.h>
+    #include <stddef.h>
+    #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    #ifndef ECS_LIKELY
-    #  if defined(__GNUC__) || defined(__clang__)
-    #    define ECS_LIKELY(x)   __builtin_expect(!!(x), 1)
-    #    define ECS_UNLIKELY(x) __builtin_expect(!!(x), 0)
-    #  else
-    #    define ECS_LIKELY(x)   (x)
-    #    define ECS_UNLIKELY(x) (x)
-    #  endif
-    #endif
+    #include "../include/ecs_config.h"
+
 
 typedef struct {
     void *data;
@@ -23,9 +17,9 @@ typedef struct {
 } ecs_vec;
 
 static inline void ecs_vec_init(ecs_vec *v, size_t size) {
-    v->data = NULL;
+    v->data = malloc(16 * size);
     v->count = 0;
-    v->capacity = 0;
+    v->capacity = 16;
     v->size = size;
 }
 
@@ -81,13 +75,10 @@ static inline void ecs_vec_ensure(ecs_vec *v, size_t count) {
 }
 
 static inline void ecs_vec_copy(ecs_vec *src, ecs_vec *dest) {
-    if (src->size != dest->size) {
-        ecs_vec_free(dest);
-        ecs_vec_init(dest, src->size);
-    }
+    ecs_vec_init(dest, src->size);
+    ecs_vec_ensure(dest, src->count + 1);
     dest->count = src->count;
     dest->capacity = src->capacity;
-    ecs_vec_ensure(dest, src->count);
     memcpy(dest->data, src->data, src->count * src->size);
 }
 
@@ -99,16 +90,6 @@ static inline void ecs_vec_set(ecs_vec *v, size_t index, const void *elem) {
     memcpy((char *)v->data + index * v->size, elem, v->size);
 }
 
-// static inline void ecs_vec_remove(ecs_vec *v, size_t index) {
-//     if (ECS_UNLIKELY(index >= v->count)) {
-//         return;
-//     }
-//     size_t size = v->size;
-//     char *data = (char *)v->data;
-//     memmove(data + index * size, data + (index + 1) * size, (v->count - index - 1) * size);
-//     v->count--;
-// }
-
 static inline void ecs_vec_remove_fast(ecs_vec *v, size_t index) {
     if (ECS_UNLIKELY(index >= v->count)) {
         return;
@@ -119,6 +100,47 @@ static inline void ecs_vec_remove_fast(ecs_vec *v, size_t index) {
     v->count--;
 }
 
-#define ECS_VEC_GET(type, v, i) ((type *)((char *)(v)->data + (i) * (v)->size))
+static inline ecs_vec ecs_vec_concat(ecs_vec *v1, ecs_vec *v2) {
+    ecs_vec result = {0};
+    ecs_vec_init(&result, v1->size);
+    ecs_vec_ensure(&result, v1->count + v2->count);
+    memcpy(result.data, v1->data, v1->count * v1->size);
+    memcpy((char *)result.data + v1->count * v1->size, v2->data, v2->count * v2->size);
+    result.count = v1->count + v2->count;
+    result.size = v1->size;
+    return result;
+}
 
+static inline void ecs_vec_remove_ordered(ecs_vec *v, size_t index) {
+    if (ECS_UNLIKELY(index >= v->count)) {
+        return;
+    }
+    size_t size = v->size;
+    char *data = (char *)v->data;
+    memmove(data + index * size, data + (index + 1) * size, (v->count - index - 1) * size);
+    v->count--;
+}
+
+static inline void ecs_vec_remove_last(ecs_vec *v) {
+    if (ECS_UNLIKELY(v->count == 0)) {
+        return;
+    }
+    v->count--;
+}
+
+static inline void debug_vec(ecs_vec *v) {
+    printf("Vector capacity: %zu\n", v->capacity);
+    printf("Vector count: %zu\n", v->count);
+    printf("Vector size: %zu\n", v->size);
+    printf("dataptr: %p\n", v->data);
+}
+
+#define ECS_VEC_GET(type, v, i) ((type *)((char *)(v)->data + (i) * (v)->size))
+#define ECS_VEC_GET_LAST(type, v) ((type *)((char *)(v)->data + ((v)->count - 1) * (v)->size))
+#define ECS_RAW_VEC(type, ...) {                                       \
+    .capacity = sizeof((type[]){__VA_ARGS__}) / sizeof(type),          \
+    .count    = sizeof((type[]){__VA_ARGS__}) / sizeof(type),          \
+    .data     = (type[]){__VA_ARGS__},                                 \
+    .size     = sizeof(type)                                           \
+}
 #endif
