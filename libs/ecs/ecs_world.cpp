@@ -6,9 +6,6 @@
 using namespace ecs;
 
 World::World() {
-
-    component<ChildOf>();
-
     auto q = query<QueryID, EcsFunc>();
     systems_query = q;
 }
@@ -93,6 +90,7 @@ void World::add(Entity entity, Entity component) {
     }
 
     archetypes[record->archetype].setAddEdge(component, newArchetypeID);
+    archetypes[newArchetypeID].setRemoveEdge(component, record->archetype);
 
     size_t newRow = archetypes[newArchetypeID].addEntity(entity);
 
@@ -121,6 +119,7 @@ void World::remove(Entity entity, Entity component) {
     }
 
     archetypes[record->archetype].setRemoveEdge(component, newArchetypeID);
+    archetypes[newArchetypeID].setAddEdge(component, record->archetype);
 
     size_t newRow = archetypes[newArchetypeID].addEntity(entity);
 
@@ -197,7 +196,7 @@ void World::pair(Entity entity, Entity relation, Entity target) {
 }
 
 void World::childOf(Entity child, Entity parent) {
-    pair(child, component<ChildOf>(), parent);
+    pair(child, ChildOfRelation, parent);
 }
 
 Entity World::relation(Entity relation, Entity target) {

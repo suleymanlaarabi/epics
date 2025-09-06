@@ -25,6 +25,8 @@ namespace ecs {
             for (auto& component : type.data) {
                 if (components->has(component.id())) {
                     register_component(component, components->get(component.id()).size);
+                } else {
+                    register_component(component, 0);
                 }
             }
         }

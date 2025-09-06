@@ -1,5 +1,6 @@
 #include "ecs_system.hpp"
 #include "ecs_type.hpp"
+#include <cstdio>
 #include <ecs_world.hpp>
 
 struct Position {
@@ -13,12 +14,15 @@ struct Velocity {
 int main() {
     ecs::World world;
 
-    ecs::Entity parent = world.entity();
+    ecs::Entity MainScene = world.entity();
+    ecs::Entity enemy = world.entity();
 
     ecs::QueryBuilder(&world)
-        .childOf(parent)
+        .childOf(MainScene)
+        .with(enemy)
         .each<Position, Velocity>([](ecs::EcsIter<Position, Velocity> iter) {
             for (auto [pos, vel] : iter) {
+                puts("ok");
                 pos.x += vel.x;
                 pos.y += vel.y;
             }
@@ -27,7 +31,8 @@ int main() {
     ecs::Entity entity = world.entity();
     world.add<Position>(entity);
     world.add<Velocity>(entity);
-    world.childOf(entity, parent);
+    world.childOf(entity, MainScene);
+    world.add(entity, enemy);
 
     world.progess();
 }

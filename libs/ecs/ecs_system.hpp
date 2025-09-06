@@ -1,7 +1,5 @@
 #pragma once
 
-
-#include "ecs_query.hpp"
 #include "ecs_type.hpp"
 #include "ecs_world.hpp"
 
@@ -14,19 +12,14 @@ namespace ecs {
         public:
             QueryBuilder(World *world) : world(world) {}
 
-            QueryBuilder& childOf(Entity entity) {
+            QueryBuilder&childOf(Entity entity) {
                 terms.addComponent(world->relation(world->component<ChildOf>(), entity));
                 return *this;
             }
 
-            void merge(Type other) {
-                for (auto& component : other.data) {
-                    terms.addComponent(component);
-                }
-            }
-
-            Query asQuery() {
-                return Query(terms);
+            QueryBuilder& with(Entity entity) {
+                terms.addComponent(entity);
+                return *this;
             }
 
             template<typename... Components, typename Func>

@@ -62,6 +62,7 @@ namespace ecs {
 
 
         public:
+            const Entity ChildOfRelation = component<ChildOf>();
             Entity entity();
             Entity entity(size_t size);
             void pair(Entity entity, Entity relation, Entity target);
