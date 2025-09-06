@@ -7,3 +7,8 @@ target_include_directories(ecs PUBLIC
 )
 
 target_link_libraries(ecs PUBLIC datastructure rayflect)
+
+if(ENABLE_ASAN)
+    target_compile_options(ecs PUBLIC -fsanitize=address -fno-omit-frame-pointer -g)
+    target_link_options(ecs PUBLIC -fsanitize=address)
+endif()

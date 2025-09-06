@@ -25,6 +25,10 @@ namespace ecs {
         public:
             FuncType func;
             EcsFunc(FuncType func) : func(func) {}
+
+            void printFuncPtr() const {
+                printf("Function pointer: %p\n", func);
+            }
     };
 
 

@@ -87,14 +87,14 @@ void World::add(Entity entity, Entity component) {
         Type newType = archetypes[record->archetype].type;
         newType.addComponent(component);
         newArchetypeID = getOrCreateArchetypeID(newType);
-    }
 
-    archetypes[record->archetype].setAddEdge(component, newArchetypeID);
-    archetypes[newArchetypeID].setRemoveEdge(component, record->archetype);
+        archetypes[record->archetype].setAddEdge(component, newArchetypeID);
+        archetypes[newArchetypeID].setRemoveEdge(component, record->archetype);
+    }
 
     size_t newRow = archetypes[newArchetypeID].addEntity(entity);
 
-    migrateEntity(record->archetype, newArchetypeID, newRow);
+    migrateEntity(record->archetype, newArchetypeID, record->row);
 
     entity_manager.processEntityUpdate(archetypes[record->archetype].removeEntity(record->row));
 
@@ -116,10 +116,10 @@ void World::remove(Entity entity, Entity component) {
 
         newType.removeComponent(component);
         newArchetypeID = getOrCreateArchetypeID(newType);
-    }
 
-    archetypes[record->archetype].setRemoveEdge(component, newArchetypeID);
-    archetypes[newArchetypeID].setAddEdge(component, record->archetype);
+        archetypes[record->archetype].setRemoveEdge(component, newArchetypeID);
+        archetypes[newArchetypeID].setAddEdge(component, record->archetype);
+    }
 
     size_t newRow = archetypes[newArchetypeID].addEntity(entity);
 
@@ -172,8 +172,9 @@ Archetype *World::getArchetype(Entity entity) {
 void World::registerSystem(FuncType func, QueryID query) {
     Entity system = entity();
 
-    set(system, EcsFunc {func});
-    set(system, QueryID {query});
+
+    set<EcsFunc>(system, EcsFunc(func));
+    set<QueryID>(system, QueryID(query.id));
 }
 
 void World::progess() {

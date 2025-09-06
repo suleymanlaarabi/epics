@@ -25,7 +25,7 @@ namespace ecs {
             template<typename... Components, typename Func>
             requires std::invocable<Func, ZipSpan<Components...>>
             void each(Func&& func) {
-                world->system<Components...>(std::forward<Func>(func), terms);
+                world->system<Components...>(func, terms);
             }
 
     };

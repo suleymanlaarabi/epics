@@ -28,7 +28,20 @@ int main() {
             }
         });
 
+
+    ecs::QueryBuilder(&world)
+        .childOf(MainScene)
+        .with(enemy)
+        .each<Position, Velocity>([](ecs::EcsIter<Position, Velocity> iter) {
+            for (auto [pos, vel] : iter) {
+                puts("ok");
+                pos.x += vel.x;
+                pos.y += vel.y;
+            }
+        });
+
     ecs::Entity entity = world.entity();
+
     world.add<Position>(entity);
     world.add<Velocity>(entity);
     world.childOf(entity, MainScene);
