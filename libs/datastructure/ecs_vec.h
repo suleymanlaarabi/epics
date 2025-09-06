@@ -6,7 +6,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    #include "../include/ecs_config.h"
+    #include "../ecs/ecs_utils.h"
 
 
 typedef struct {
@@ -72,6 +72,11 @@ static inline void ecs_vec_ensure(ecs_vec *v, size_t count) {
         v->data = realloc(v->data, new_capacity * v->size);
         v->capacity = new_capacity;
     }
+}
+
+static inline void *ecs_vec_add(ecs_vec *v) {
+    ecs_vec_push_zero(v);
+    return (char *)v->data + (v->count - 1) * v->size;
 }
 
 static inline void ecs_vec_copy(ecs_vec *src, ecs_vec *dest) {
