@@ -14,6 +14,14 @@ namespace ecs {
             Query(Type terms) : terms(std::move(terms)) {}
             Query(Type terms, Type notTerms) : terms(std::move(terms)), notTerms(std::move(notTerms)) {}
 
+            void print() {
+                std::cout << "Query: ";
+                terms.print();
+                std::cout << " NOT ";
+                notTerms.print();
+                std::cout << std::endl;
+            }
+
             void addArchetype(ArchetypeID id) {
                 matches.push_back(id);
             }
@@ -44,4 +52,17 @@ namespace ecs {
                 return true;
             }
     };
+
+    inline bool operator==(const Query& a, const Query& b) {
+        return a.terms == b.terms && a.notTerms == b.notTerms;
+    }
+
+    struct QueryHash {
+        std::size_t operator()(const Query& q) const noexcept {
+            std::size_t h1 = std::hash<Type>{}(q.terms);
+            std::size_t h2 = std::hash<Type>{}(q.notTerms);
+            return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+        }
+    };
+
 }

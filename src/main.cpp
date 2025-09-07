@@ -35,6 +35,14 @@ struct GravityPlugin : ecs::Plugin {
             .without<Player>()
             .iter<Position>(this->positionSystem);
 
+
+        ecs::QueryBuilder(&world)
+            .childOf<MainScene>()
+            .without<Player>()
+            .iter<Position>(this->positionSystem);
+
+        world.debug();
+
     }
 
 };
@@ -47,7 +55,6 @@ int main() {
     ecs::Entity player = world.entity();
     world.childOf<MainScene>(player);
     world.set(player, Position {10});
-    world.add<Player>(player);
 
     world.progress();
 }

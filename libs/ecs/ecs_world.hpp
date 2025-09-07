@@ -48,7 +48,7 @@ namespace ecs {
         std::vector<Archetype> archetypes;
         std::unordered_map<Type, ArchetypeID> archetype_map;
         std::vector<Query> queries;
-        std::unordered_map<Type, QueryID> query_map;
+        std::unordered_map<Query, QueryID, QueryHash> query_map;
         QueryID systems_query;
 
         private:
@@ -65,7 +65,10 @@ namespace ecs {
                 return type;
             }
 
-            QueryID registerQuery(Query newQuery) {
+            inline QueryID registerQuery(Query &newQuery) {
+                if (query_map.contains(newQuery)) {
+                    return query_map.at(newQuery);
+                }
 
                 queries.push_back(newQuery);
                 Query &query = queries.back();
@@ -77,11 +80,14 @@ namespace ecs {
                     }
                 }
 
+                query_map[newQuery] = QueryID {queries.size() - 1};
+
                 return QueryID {queries.size() - 1};
             }
 
-            QueryID registerQuery(Type type) {
-                return registerQuery(Query(type));
+            inline QueryID registerQuery(Type type) {
+                Query query = Query(type);
+                return registerQuery(query);
             }
 
 
@@ -106,6 +112,10 @@ namespace ecs {
             void progress();
 
             World();
+
+            void debug() {
+                std::cout << "Query Length: " << queries.size() << std::endl;
+            }
 
             template <typename Plugin>
             void plugin(Plugin &&plugin) {
