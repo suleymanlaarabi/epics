@@ -19,7 +19,7 @@ ArchetypeID World::getOrCreateArchetypeID(Type type) {
     archetypes.push_back(Archetype(type, &component_records));
 
     for (auto &query: queries) {
-        if (query.terms.matcheWith(type)) {
+        if (query.matchWithType(type)) {
             query.addArchetype(id);
         }
     }

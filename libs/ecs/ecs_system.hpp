@@ -1,19 +1,20 @@
 #pragma once
 
+#include "ecs_query.hpp"
 #include "ecs_type.hpp"
 #include "ecs_world.hpp"
 
 namespace ecs {
     class QueryBuilder {
         private:
-            Type terms;
+            Query query;
             World *world;
 
         public:
             QueryBuilder(World *world) : world(world) {}
 
             QueryBuilder& childOf(Entity entity) {
-                terms.addComponent(world->relation(world->component<ChildOf>(), entity));
+                query.addTerm(world->relation(world->component<ChildOf>(), entity));
                 return *this;
             }
 
@@ -24,26 +25,37 @@ namespace ecs {
             }
 
             QueryBuilder& with(Entity entity) {
-                terms.addComponent(entity);
+                query.addTerm(entity);
                 return *this;
             }
 
             template<typename ...Components>
             QueryBuilder& with() {
-                (terms.addComponent(world->component<Components>()), ...);
+                (query.addTerm(world->component<Components>()), ...);
+                return *this;
+            }
+
+            QueryBuilder& without(Entity entity) {
+                query.addNotTerm(entity);
+                return *this;
+            }
+
+            template<typename ...Components>
+            QueryBuilder& without() {
+                (query.addNotTerm(world->component<Components>()), ...);
                 return *this;
             }
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, ZipSpan<Components...>>
             void each(Func&& func) {
-                world->system<Components...>(func, terms);
+                world->system<Components...>(func, query);
             }
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, u32, Components*...>
             void iter(Func&& func) {
-                world->systemIter<Components...>(func, terms);
+                world->systemIter<Components...>(func, query);
             }
 
     };

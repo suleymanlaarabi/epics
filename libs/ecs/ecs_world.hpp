@@ -65,24 +65,23 @@ namespace ecs {
                 return type;
             }
 
-            QueryID registerQuery(Type type) {
-                if (query_map.contains(type)) {
-                    return query_map[type];
-                }
+            QueryID registerQuery(Query newQuery) {
 
-                queries.push_back(Query(type));
+                queries.push_back(newQuery);
                 Query &query = queries.back();
 
                 for (std::size_t i = 0; i < archetypes.size(); ++i) {
                     auto& archetype = archetypes[i];
-                    if (query.terms.matcheWith(archetype.type)) {
+                    if (query.matchWithType(archetype.type)) {
                         query.addArchetype(i);
                     }
                 }
 
-                query_map[type] = QueryID {queries.size() - 1};
-
                 return QueryID {queries.size() - 1};
+            }
+
+            QueryID registerQuery(Type type) {
+                return registerQuery(Query(type));
             }
 
 
@@ -161,18 +160,16 @@ namespace ecs {
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, ZipSpan<Components...>>
-            void system(Func&& func, Type otherTerms) {
+            void system(Func&& func, Query query) {
                 static Func userFunc = std::forward<Func>(func);
 
                 FuncType invoker = [](ArchetypeID archetypeID, World* world) {
                     std::invoke(userFunc, world->iter<Components...>(archetypeID));
                 };
 
-                Type terms = createType<Components...>();
+                query.mergeTerms(createType<Components...>());
 
-                terms.merge(otherTerms);
-
-                registerSystem(invoker, registerQuery(terms));
+                registerSystem(invoker, registerQuery(query));
             }
 
             template<typename... Components, typename Func>
@@ -195,7 +192,7 @@ namespace ecs {
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, u32, Components*...>
-            void systemIter(Func&& func, Type otherTerms) {
+            void systemIter(Func&& func, Query query) {
                 static Func userFunc = std::forward<Func>(func);
 
                 FuncType invoker = [](ArchetypeID archetypeID, World* world) {
@@ -208,11 +205,9 @@ namespace ecs {
                     );
                 };
 
-                Type terms = createType<Components...>();
+                query.mergeTerms(createType<Components...>());
 
-                terms.merge(otherTerms);
-
-                registerSystem(invoker, registerQuery(terms));
+                registerSystem(invoker, registerQuery(query));
             }
 
             template<typename Component>

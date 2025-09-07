@@ -99,6 +99,10 @@ namespace ecs {
             }
         }
 
+        bool includes(Entity entity) {
+            return std::find(data.begin(), data.end(), entity) != data.end();
+        }
+
         void sort() {
             std::sort(data.begin(), data.end());
         }
