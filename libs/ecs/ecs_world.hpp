@@ -175,6 +175,46 @@ namespace ecs {
                 registerSystem(invoker, registerQuery(terms));
             }
 
+            template<typename... Components, typename Func>
+            requires std::invocable<Func, u32, Components*...>
+            void systemIter(Func&& func) {
+                static Func userFunc = std::forward<Func>(func);
+
+                FuncType invoker = [](ArchetypeID archetypeID, World* world) {
+                    Archetype *archetype = &world->archetypes[archetypeID];
+                    std::invoke(userFunc,
+                        archetype->entityCount(),
+                        reinterpret_cast<Components*>(
+                            archetype->getRawComponent(0, world->component<Components>())
+                        )...
+                    );
+                };
+
+                registerSystem<Components...>(invoker);
+            }
+
+            template<typename... Components, typename Func>
+            requires std::invocable<Func, u32, Components*...>
+            void systemIter(Func&& func, Type otherTerms) {
+                static Func userFunc = std::forward<Func>(func);
+
+                FuncType invoker = [](ArchetypeID archetypeID, World* world) {
+                    Archetype *archetype = &world->archetypes[archetypeID];
+                    std::invoke(userFunc,
+                        archetype->entityCount(),
+                        reinterpret_cast<Components* __restrict>(
+                            archetype->getRawComponent(0, world->component<Components>())
+                        )...
+                    );
+                };
+
+                Type terms = createType<Components...>();
+
+                terms.merge(otherTerms);
+
+                registerSystem(invoker, registerQuery(terms));
+            }
+
             template<typename Component>
             Entity component() {
                 rayflect::ComponentID id = rayflect::getComponentID<Component>();

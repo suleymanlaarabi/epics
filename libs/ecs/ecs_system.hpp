@@ -28,5 +28,11 @@ namespace ecs {
                 world->system<Components...>(func, terms);
             }
 
+            template<typename... Components, typename Func>
+            requires std::invocable<Func, u32, Components*...>
+            void iter(Func&& func) {
+                world->systemIter<Components...>(func, terms);
+            }
+
     };
 }
