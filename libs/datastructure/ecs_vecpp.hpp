@@ -1,11 +1,11 @@
 #ifndef ECS_VEC_WRAPPER_HPP
 #define ECS_VEC_WRAPPER_HPP
 
+#include <cassert>
 extern "C" {
 #include "ecs_vec.h"
 }
 
-#include <stdexcept>
 
 class EcsVec {
 public:
@@ -62,21 +62,21 @@ public:
         ecs_vec_remove_fast(&_vec, index);
     }
 
-    void removeOrdered(size_t index) {
-        ecs_vec_remove_ordered(&_vec, index);
-    }
+    // void removeOrdered(size_t index) {
+    //     ecs_vec_remove_ordered(&_vec, index);
+    // }
 
     void removeLast() {
         ecs_vec_remove_last(&_vec);
     }
 
     void* get(size_t index) const {
-        if (index >= _vec.count) throw std::out_of_range("EcsVec::get index out of range");
+        assert(index <= _vec.count && "EcsVec::get index out of range");
         return (char*)_vec.data + index * _vec.size;
     }
 
     void* last() const {
-        if (_vec.count == 0) throw std::out_of_range("EcsVec::last empty vector");
+        assert(_vec.count != 0 && "EcsVec::last empty vector");
         return (char*)_vec.data + (_vec.count - 1) * _vec.size;
     }
 
@@ -95,4 +95,4 @@ private:
     ecs_vec _vec;
 };
 
-#endif // ECS_VEC_WRAPPER_HPP
+#endif

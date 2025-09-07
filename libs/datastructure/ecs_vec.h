@@ -116,15 +116,15 @@ static inline ecs_vec ecs_vec_concat(ecs_vec *v1, ecs_vec *v2) {
     return result;
 }
 
-static inline void ecs_vec_remove_ordered(ecs_vec *v, size_t index) {
-    if (ECS_UNLIKELY(index >= v->count)) {
-        return;
-    }
-    size_t size = v->size;
-    char *data = (char *)v->data;
-    memmove(data + index * size, data + (index + 1) * size, (v->count - index - 1) * size);
-    v->count--;
-}
+// static inline void ecs_vec_remove_ordered(ecs_vec *v, size_t index) {
+//     if (ECS_UNLIKELY(index >= v->count)) {
+//         return;
+//     }
+//     size_t size = v->size;
+//     char *data = (char *)v->data;
+//     memmove(data + index * size, data + (index + 1) * size, (v->count - index - 1) * size);
+//     v->count--;
+// }
 
 static inline void ecs_vec_remove_last(ecs_vec *v) {
     if (ECS_UNLIKELY(v->count == 0)) {

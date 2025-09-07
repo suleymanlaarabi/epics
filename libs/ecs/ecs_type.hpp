@@ -14,9 +14,15 @@ namespace ecs {
     template<typename ...Components>
     using EcsIter = ZipSpan<Components...>;
 
+    class World;
 
     struct ComponentRecord {
         size_t size;
+    };
+
+    struct Iter {
+        u32 count;
+        World *world;
     };
 
     struct QueryID {
@@ -79,9 +85,12 @@ namespace ecs {
         std::vector<Entity> data;
 
         Type() = default;
+
         Type(Entity entity) {
             data.push_back(entity);
         }
+
+        explicit Type(std::vector<Entity> d) : data(std::move(d)) {}
 
         void addComponent(Entity entity) {
             data.push_back(entity);

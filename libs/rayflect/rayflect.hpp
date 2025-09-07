@@ -42,7 +42,7 @@ namespace rayflect {
     }
 
     template <typename T>
-    ComponentID getComponentID() {
+    ComponentID _getComponentID() {
         static ComponentID typeID = [] {
             ComponentID id = detail::createComponentID();
             std::lock_guard<std::mutex> lock(detail::componentSizeTableMutex());
@@ -50,6 +50,12 @@ namespace rayflect {
             return id;
         }();
         return typeID;
+    }
+
+    template <typename T>
+    ComponentID getComponentID() {
+        using DecayedT = std::remove_cv_t<std::remove_reference_t<T>>;
+        return _getComponentID<DecayedT>();
     }
 
     inline ComponentID getComponentID() {

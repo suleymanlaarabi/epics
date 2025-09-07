@@ -1,13 +1,23 @@
 #pragma once
 #include <ecs_type.hpp>
+#include <set>
 #include <vector>
 
 namespace ecs {
-    class Query {
 
+    enum class EcsAccess {
+        In,
+        Out,
+        InOut,
+        None
+    };
+
+    class Query {
         public:
             Type terms;
             Type notTerms;
+            std::set<Entity> read_access;
+            std::set<Entity> none_access;
             std::vector<ArchetypeID> matches;
 
             Query() = default;
@@ -28,6 +38,14 @@ namespace ecs {
 
             void addTerm(Entity term) {
                 terms.addComponent(term);
+            }
+
+            void readTerm(Entity term) {
+                read_access.insert(term);
+            }
+
+            void noneTerm(Entity term) {
+                none_access.insert(term);
             }
 
             void addNotTerm(Entity term) {

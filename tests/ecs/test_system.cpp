@@ -1,5 +1,6 @@
 #include "ecs_type.hpp"
 #include "ecs_world.hpp"
+#include "ecs_system.hpp"
 #include <criterion/criterion.h>
 
 struct Position {
@@ -19,7 +20,7 @@ Test(system, simple) {
 
     Position fromSystemCall = {0};
 
-    world.systemIter<Position>([&fromSystemCall](ecs::u32 count, Position *p) {
+    world.system<Position>().iter([&fromSystemCall](ecs::Iter it, Position *p) {
         fromSystemCall = *p;
     });
 
@@ -40,7 +41,7 @@ Test(system, remove) {
 
     world.remove<Position>(entity1);
 
-    world.systemIter<Position>([&fromSystemCall](ecs::u32 count, Position *p) {
+    world.system<Position>().iter([&fromSystemCall](ecs::Iter it, Position *p) {
         fromSystemCall = *p;
     });
 
@@ -61,7 +62,7 @@ Test(system, advanced) {
     Position fromSystemCall = {0};
     Velocity fromSystemCallVelocity = {0, 0};
 
-    world.system<Position, Velocity>([&fromSystemCall, &fromSystemCallVelocity](ecs::EcsIter<Position, Velocity> iter) {
+    world.system<Position, Velocity>().each([&fromSystemCall, &fromSystemCallVelocity](ecs::EcsIter<Position, Velocity> iter) {
         for (auto [p, v] : iter) {
             fromSystemCall = p;
             fromSystemCallVelocity = v;
@@ -87,7 +88,7 @@ Test(system, advanced2) {
     Position fromSystemCall = {0};
     Velocity fromSystemCallVelocity = {0, 0};
 
-    world.system<Position, Velocity>([&fromSystemCall, &fromSystemCallVelocity](ecs::EcsIter<Position, Velocity> iter) {
+    world.system<Position, Velocity>().each([&fromSystemCall, &fromSystemCallVelocity](ecs::EcsIter<Position, Velocity> iter) {
         for (auto [p, v] : iter) {
             fromSystemCall = p;
             fromSystemCallVelocity = v;

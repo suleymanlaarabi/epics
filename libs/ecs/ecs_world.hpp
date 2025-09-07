@@ -31,7 +31,8 @@ namespace ecs {
             }
     };
 
-    class RegisteredPlugin {};
+    struct RegisteredPlugin {};
+    struct ChildOf {};
 
     class Plugin {
         public:
@@ -39,7 +40,9 @@ namespace ecs {
             virtual void build(ecs::World& world) = 0;
     };
 
-    struct ChildOf {};
+
+    template<typename... IterComponents>
+    class QueryBuilder;
 
     class World {
         EntityManager entity_manager;
@@ -57,12 +60,9 @@ namespace ecs {
             Query &getSystemsQuery();
             std::vector<ArchetypeID> &getQueryMatchedArchetypes(QueryID queryID);
 
-
             template<typename ...Components>
             Type createType() {
-                Type type;
-                (type.addComponent(component<Components>()), ...);
-                return type;
+                return Type{ std::vector<Entity>{ component<Components>()... } };
             }
 
             inline QueryID registerQuery(Query &newQuery) {
@@ -133,7 +133,6 @@ namespace ecs {
             template<typename ...Components>
             QueryID query() {
                 Type type = createType<Components...>();
-
                 return registerQuery(type);
             }
 
@@ -158,18 +157,6 @@ namespace ecs {
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, ZipSpan<Components...>>
-            void system(Func&& func) {
-                static Func userFunc = std::forward<Func>(func);
-
-                FuncType invoker = [](ArchetypeID archetypeID, World* world) {
-                    std::invoke(userFunc, world->iter<Components...>(archetypeID));
-                };
-
-                registerSystem<Components...>(invoker);
-            }
-
-            template<typename... Components, typename Func>
-            requires std::invocable<Func, ZipSpan<Components...>>
             void system(Func&& func, Query query) {
                 static Func userFunc = std::forward<Func>(func);
 
@@ -182,33 +169,24 @@ namespace ecs {
                 registerSystem(invoker, registerQuery(query));
             }
 
-            template<typename... Components, typename Func>
-            requires std::invocable<Func, u32, Components*...>
-            void systemIter(Func&& func) {
-                static Func userFunc = std::forward<Func>(func);
 
-                FuncType invoker = [](ArchetypeID archetypeID, World* world) {
-                    Archetype *archetype = &world->archetypes[archetypeID];
-                    std::invoke(userFunc,
-                        archetype->entityCount(),
-                        reinterpret_cast<Components*>(
-                            archetype->getRawComponent(0, world->component<Components>())
-                        )...
-                    );
-                };
-
-                registerSystem<Components...>(invoker);
+            template<typename... Components>
+            QueryBuilder<Components...> system() {
+                return QueryBuilder<Components...>(this);
             }
 
             template<typename... Components, typename Func>
-            requires std::invocable<Func, u32, Components*...>
+            requires std::invocable<Func, Iter, Components*...>
             void systemIter(Func&& func, Query query) {
                 static Func userFunc = std::forward<Func>(func);
 
                 FuncType invoker = [](ArchetypeID archetypeID, World* world) {
                     Archetype *archetype = &world->archetypes[archetypeID];
                     std::invoke(userFunc,
-                        archetype->entityCount(),
+                        Iter {
+                            .count = archetype->entityCount(),
+                            .world = world
+                        },
                         reinterpret_cast<Components* __restrict>(
                             archetype->getRawComponent(0, world->component<Components>())
                         )...
@@ -242,13 +220,13 @@ namespace ecs {
             }
 
             template<typename Component>
-            void remove(Entity entity) {
+            inline void remove(Entity entity) {
                 Entity componentEntity = component<Component>();
                 remove(entity, componentEntity);
             }
 
             template<typename Component>
-            void add(Entity entity) {
+            inline void add(Entity entity) {
                 Entity componentEntity = component<Component>();
                 add(entity, componentEntity);
             }

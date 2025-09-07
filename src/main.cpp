@@ -1,60 +1,41 @@
-#include "ecs_system.hpp"
 #include "ecs_type.hpp"
+#include "rayflect.hpp"
 #include <cassert>
 #include <cstdio>
 #include <ecs_world.hpp>
+#include <ecs_system.hpp>
+
+#include <SFML/Graphics.hpp>
+#include <iostream>
 
 struct Position {
-    float x, y;
+    float x;
+    float y;
 };
-
 struct Velocity {
-    float x, y;
+    float x;
+    float y;
 };
-
-struct Health {
-    int value;
-};
-
-struct MainScene {};
-
 struct Player {};
-
-struct GravityPlugin : ecs::Plugin {
-
-    static void positionSystem(ecs::u32 count, Position *pos) {
-        for (ecs::u32 i = 0; i < count; ++i) {
-            puts("ok");
-        }
-    }
-
-    void build(ecs::World &world) {
-
-        ecs::QueryBuilder(&world)
-            .childOf<MainScene>()
-            .without<Player>()
-            .iter<Position>(this->positionSystem);
-
-
-        ecs::QueryBuilder(&world)
-            .childOf<MainScene>()
-            .without<Player>()
-            .iter<Position>(this->positionSystem);
-
-        world.debug();
-
-    }
-
-};
+struct MainScene{};
 
 int main() {
     ecs::World world;
 
-    world.plugin(GravityPlugin());
+    world.system()
+        .read<Position>()
+        .each([](ecs::EcsIter<const Position> iter){
+            for(auto [pos] : iter) {
+                puts("ok");
+            }
+        });
 
-    ecs::Entity player = world.entity();
-    world.childOf<MainScene>(player);
-    world.set(player, Position {10});
+
+    std::cout << "ID: " << rayflect::getComponentID<Position>() << std::endl;
+    std::cout << "ID: " << rayflect::getComponentID<const Position>() << std::endl;
+
+    ecs::Entity entity = world.entity();
+    world.add<Position>(entity);
 
     world.progress();
 }
