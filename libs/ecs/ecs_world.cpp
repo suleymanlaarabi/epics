@@ -28,15 +28,15 @@ ArchetypeID World::getOrCreateArchetypeID(Type type) {
 }
 
 void World::migrateEntity(ArchetypeID oldArchetypeID, ArchetypeID newArchetypeID, size_t oldRow) {
-    Archetype *oldArchetype = &archetypes[oldArchetypeID];
-    Archetype *newArchetype = &archetypes[newArchetypeID];
-    size_t newRow = newArchetype->entities_indices.size() - 1;
+    Archetype &oldArchetype = archetypes[oldArchetypeID];
+    Archetype &newArchetype = archetypes[newArchetypeID];
+    size_t newRow = newArchetype.entities_indices.size() - 1;
 
-    for (auto &component : oldArchetype->type.data) {
-        if (!newArchetype->has_component(component)) {
+    for (auto &component : oldArchetype.type.data) {
+        if (!newArchetype.has_component(component)) {
             continue;
         }
-        newArchetype->writeRawComponent(newRow, component, oldArchetype->getRawComponent(oldRow, component));
+        newArchetype.writeRawComponent(newRow, component, oldArchetype.getRawComponent(oldRow, component));
     }
 }
 
@@ -77,14 +77,16 @@ void World::add(Entity entity, Entity component) {
         return;
     }
 
-    if (archetypes[record->archetype].has_component(component)) {
+    Archetype &oldArchetype = archetypes[record->archetype];
+
+    if (oldArchetype.has_component(component)) {
         return;
     }
 
-    ArchetypeID newArchetypeID = archetypes[record->archetype].getAddEdge(component);
+    ArchetypeID newArchetypeID = oldArchetype.getAddEdge(component);
 
     if (newArchetypeID == UINT64_MAX) {
-        Type newType = archetypes[record->archetype].type;
+        Type newType = oldArchetype.type;
         newType.addComponent(component);
         newArchetypeID = getOrCreateArchetypeID(newType);
 
@@ -177,7 +179,7 @@ void World::registerSystem(FuncType func, QueryID query) {
     set<QueryID>(system, QueryID(query.id));
 }
 
-void World::progess() {
+void World::progress() {
     std::vector<ecs::ArchetypeID> &archetypes = getSystems();
     for (auto archetypeID : archetypes) {
         auto zip = iter<ecs::EcsFunc, ecs::QueryID>(archetypeID);

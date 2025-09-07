@@ -35,24 +35,24 @@ namespace ecs {
             std::cout << "Entity Count: " << entities_indices.size() << std::endl;
         }
 
-        void register_component(Entity entity, size_t size) {
+        inline void register_component(Entity entity, size_t size) {
             type.addComponent(entity);
             cols.set(entity.id(), EcsVec(size));
         }
 
-        bool has_component(Entity entity) {
+        inline bool has_component(Entity entity) {
             return cols.has(entity.id());
         }
 
-        void *getRawComponent(size_t row, Entity component) {
+        inline void *getRawComponent(size_t row, Entity component) {
             return cols.get(component.id()).get(row);
         }
 
-        void writeRawComponent(size_t row, Entity component, void *data) {
+        inline void writeRawComponent(size_t row, Entity component, void *data) {
             cols.get(component.id()).set(row, data);
         }
 
-        u64 addEntity(Entity entity) {
+        inline u64 addEntity(Entity entity) {
             for (auto& col : cols.values()) {
                 col.pushZero();
             }
@@ -60,7 +60,7 @@ namespace ecs {
             return entities_indices.size() - 1;
         }
 
-        EntityUpdate removeEntity(u32 row) {
+        inline EntityUpdate removeEntity(u32 row) {
             u32 entity_index = entities_indices[row];
             EntityUpdate update{entity_index, row};
             for (auto& col : cols.values()) {
@@ -71,29 +71,29 @@ namespace ecs {
             return {0};
         }
 
-        ArchetypeID getAddEdge(Entity addComponent) {
+        inline ArchetypeID getAddEdge(Entity addComponent) {
             if (!add_edge.has(addComponent.id())) {
                 return UINT64_MAX;
             }
             return add_edge.get(addComponent.id());
         }
 
-        void setAddEdge(Entity addComponent, ArchetypeID newArchetypeID) {
+        inline void setAddEdge(Entity addComponent, ArchetypeID newArchetypeID) {
             add_edge.set(addComponent.id(), newArchetypeID);
         }
 
-        ArchetypeID getRemoveEdge(Entity removeComponent) {
+        inline ArchetypeID getRemoveEdge(Entity removeComponent) {
             if (!remove_edge.has(removeComponent.id())) {
                 return UINT64_MAX;
             }
             return remove_edge.get(removeComponent.id());
         }
 
-        void setRemoveEdge(Entity removeComponent, ArchetypeID newArchetypeID) {
+        inline void setRemoveEdge(Entity removeComponent, ArchetypeID newArchetypeID) {
             remove_edge.set(removeComponent.id(), newArchetypeID);
         }
 
-        u32 entityCount() const {
+        inline u32 entityCount() const {
             return entities_indices.size();
         }
     };

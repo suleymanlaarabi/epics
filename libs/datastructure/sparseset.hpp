@@ -45,11 +45,9 @@ private:
     }
 
     uint32_t index_for(IdT id) const {
-        IdT page_id = id >> PageBits;
-        IdT offset = id & PAGE_MASK;
-        auto it = pages.find(page_id);
+        auto it = pages.find(id >> PageBits);
         if (it == pages.end()) return EMPTY;
-        return it->second->indices[static_cast<std::size_t>(offset)];
+        return it->second->indices[static_cast<std::size_t>(id & PAGE_MASK)];
     }
 
 public:

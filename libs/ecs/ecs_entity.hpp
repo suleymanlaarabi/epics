@@ -20,7 +20,7 @@ namespace ecs {
     public:
         EntityManager() = default;
 
-        Entity createEntity() {
+        inline Entity createEntity() {
             if (!availableEntities.empty()) {
                 uint32_t index = availableEntities.back();
                 availableEntities.pop_back();
@@ -37,16 +37,16 @@ namespace ecs {
             return Entity{ index, 0 };
         }
 
-        void processEntityUpdate(EntityUpdate update) {
+        inline void processEntityUpdate(EntityUpdate update) {
             getRecord(update.entity_index)->row = update.newRow;
         }
 
 
-        bool isAlive(const Entity& e) const {
+        inline bool isAlive(const Entity& e) const {
             return generations[e.index] == e.generation;
         }
 
-        void destroyEntity(uint32_t index) {
+        inline void destroyEntity(uint32_t index) {
             if (index >= generations.size()) return;
 
             generations[index]++;
@@ -54,7 +54,7 @@ namespace ecs {
             entityRecords[index] = EntityRecord{ 0, UINT64_MAX };
         }
 
-        EntityRecord *getRecord(uint32_t index) {
+        inline EntityRecord *getRecord(uint32_t index) {
             return &entityRecords[index];
         }
 

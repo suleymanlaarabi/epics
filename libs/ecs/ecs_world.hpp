@@ -63,35 +63,7 @@ namespace ecs {
             ArchetypeID getOrCreateArchetypeID(Type type);
             void migrateEntity(ArchetypeID oldArchetypeID, ArchetypeID newArchetypeID, size_t oldRow);
             Query &getSystemsQuery();
-
-
-        public:
-            const Entity ChildOfRelation = component<ChildOf>();
-            Entity entity();
-            Entity entity(size_t size);
-            void pair(Entity entity, Entity relation, Entity target);
-            void childOf(Entity child, Entity parent);
-            Entity relation(Entity relation, Entity target);
-            void kill(Entity entity);
-            bool has(Entity entity, Entity component);
-            bool isAlive(Entity entity);
-            void add(Entity entity, Entity component);
-            void remove(Entity entity, Entity component);
-            void set(Entity entity, Entity component, void *value);
-            void *get(Entity entity, Entity component);
             std::vector<ArchetypeID> &getQueryMatchedArchetypes(QueryID queryID);
-            std::vector<ArchetypeID> &getSystems();
-            Archetype *getArchetype(ArchetypeID archetypeID);
-            Archetype *getArchetype(Entity entity);
-            void registerSystem(FuncType func, QueryID query);
-            void progess();
-
-            World();
-
-            template <typename Ptr, typename = std::enable_if_t<std::is_pointer<typename Ptr::element_type*>::value>>
-            void plugin(Ptr&& p) {
-                p->build(*this);
-            }
 
 
             template<typename ...Components>
@@ -119,6 +91,34 @@ namespace ecs {
                 query_map[type] = QueryID {queries.size() - 1};
 
                 return QueryID {queries.size() - 1};
+            }
+
+
+        public:
+            const Entity ChildOfRelation = component<ChildOf>();
+            Entity entity();
+            Entity entity(size_t size);
+            void pair(Entity entity, Entity relation, Entity target);
+            void childOf(Entity child, Entity parent);
+            Entity relation(Entity relation, Entity target);
+            void kill(Entity entity);
+            bool has(Entity entity, Entity component);
+            bool isAlive(Entity entity);
+            void add(Entity entity, Entity component);
+            void remove(Entity entity, Entity component);
+            void set(Entity entity, Entity component, void *value);
+            void *get(Entity entity, Entity component);
+            std::vector<ArchetypeID> &getSystems();
+            Archetype *getArchetype(ArchetypeID archetypeID);
+            Archetype *getArchetype(Entity entity);
+            void registerSystem(FuncType func, QueryID query);
+            void progress();
+
+            World();
+
+            template <typename Ptr, typename = std::enable_if_t<std::is_pointer<typename Ptr::element_type*>::value>>
+            void plugin(Ptr&& p) {
+                p->build(*this);
             }
 
             template<typename ...Components>
