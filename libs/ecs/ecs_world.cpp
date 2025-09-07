@@ -125,7 +125,7 @@ void World::remove(Entity entity, Entity component) {
 
     size_t newRow = archetypes[newArchetypeID].addEntity(entity);
 
-    migrateEntity(record->archetype, newArchetypeID, newRow);
+    migrateEntity(record->archetype, newArchetypeID, record->row);
 
     entity_manager.processEntityUpdate(archetypes[record->archetype].removeEntity(record->row));
 
