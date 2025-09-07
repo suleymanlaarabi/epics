@@ -31,20 +31,12 @@ namespace ecs {
             }
     };
 
+    class RegisteredPlugin {};
 
     class Plugin {
         public:
             virtual ~Plugin() = default;
             virtual void build(ecs::World& world) = 0;
-            static std::unique_ptr<Plugin> make();
-    };
-
-    template <typename Derived>
-    class PluginBase : public Plugin {
-    public:
-        static std::unique_ptr<Derived> make() {
-            return std::make_unique<Derived>();
-        }
     };
 
     struct ChildOf {};
@@ -116,9 +108,17 @@ namespace ecs {
 
             World();
 
-            template <typename Ptr, typename = std::enable_if_t<std::is_pointer<typename Ptr::element_type*>::value>>
-            void plugin(Ptr&& p) {
-                p->build(*this);
+            template <typename Plugin>
+            void plugin(Plugin &&plugin) {
+                Entity pluginEntity = component<Plugin>();
+
+                if (has<RegisteredPlugin>(pluginEntity)) {
+                    return;
+                }
+
+                add<RegisteredPlugin>(pluginEntity);
+
+                plugin.build(*this);
             }
 
             template<typename ...Components>
@@ -246,6 +246,12 @@ namespace ecs {
             void add(Entity entity) {
                 Entity componentEntity = component<Component>();
                 add(entity, componentEntity);
+            }
+
+            template<typename Component>
+            void childOf(Entity entity) {
+                Entity componentEntity = component<Component>();
+                childOf(entity, componentEntity);
             }
 
             template<typename Component>

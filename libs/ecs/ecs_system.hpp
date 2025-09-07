@@ -12,13 +12,25 @@ namespace ecs {
         public:
             QueryBuilder(World *world) : world(world) {}
 
-            QueryBuilder&childOf(Entity entity) {
+            QueryBuilder& childOf(Entity entity) {
                 terms.addComponent(world->relation(world->component<ChildOf>(), entity));
+                return *this;
+            }
+
+            template<typename Component>
+            QueryBuilder& childOf() {
+                this->childOf(world->component<Component>());
                 return *this;
             }
 
             QueryBuilder& with(Entity entity) {
                 terms.addComponent(entity);
+                return *this;
+            }
+
+            template<typename ...Components>
+            QueryBuilder& with() {
+                (terms.addComponent(world->component<Components>()), ...);
                 return *this;
             }
 

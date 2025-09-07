@@ -1,5 +1,7 @@
+#include "ecs_system.hpp"
 #include "ecs_type.hpp"
 #include <cassert>
+#include <cstdio>
 #include <ecs_world.hpp>
 
 struct Position {
@@ -14,22 +16,31 @@ struct Health {
     int value;
 };
 
+struct MainScene {};
+
+struct GravityPlugin : ecs::Plugin {
+    int live = 0;
+
+    void build(ecs::World &world) {
+        ecs::QueryBuilder(&world)
+            .childOf<MainScene>()
+            .iter<Position>([](ecs::u32 count, Position *pos) {
+                for (ecs::u32 i = 0; i < count; ++i) {
+                    puts("ok");
+                }
+            });
+    }
+};
+
 int main() {
     ecs::World world;
 
+    world.plugin(GravityPlugin());
+    world.plugin(GravityPlugin());
+
     ecs::Entity player = world.entity();
-    ecs::Entity enemy = world.entity();
+    world.childOf<MainScene>(player);
+    world.set(player, Position {10});
 
-    world.set<Position>(player, {100.0f, 50.0f});
-    world.set<Velocity>(player, {5.0f, -2.0f});
-    world.set<Health>(player, {100});
-
-    world.set<Position>(enemy, {200.0f, 150.0f});
-    world.set<Health>(enemy, {50});
-
-
-    Position &player_pos = world.get<Position>(player);
-    Position &enemy_pos = world.get<Position>(enemy);
-
-    world.remove<Velocity>(player);
+    world.progress();
 }
