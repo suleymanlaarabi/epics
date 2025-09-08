@@ -3,6 +3,7 @@
 #include "ecs_query.hpp"
 #include "ecs_type.hpp"
 #include "ecs_world.hpp"
+#include <vector>
 
 namespace ecs {
 
@@ -10,13 +11,12 @@ namespace ecs {
     class QueryBuilder {
         private:
             Query query;
+            std::vector<Entity> systemComponents;
             World *world;
 
         public:
             QueryBuilder(World *world) : world(world) {}
-            QueryBuilder(World* world, Query q) : world(world), query(std::move(q)) {}
-
-
+            QueryBuilder(World* world, Query q, std::vector<Entity> systemComponents) : world(world), query(std::move(q)), systemComponents(std::move(systemComponents)) {}
 
             QueryBuilder& debug() {
                 query.print();
@@ -34,6 +34,12 @@ namespace ecs {
                 return *this;
             }
 
+            template<typename Component>
+            QueryBuilder& on() {
+                systemComponents.push_back(world->component<Component>());
+                return *this;
+            }
+
             QueryBuilder& with(Entity entity) {
                 query.addTerm(entity);
                 query.noneTerm(entity);
@@ -48,7 +54,7 @@ namespace ecs {
             template<typename Component>
             QueryBuilder<IterComponents..., const Component> read() {
                 query.readTerm(world->component<Component>());
-                return QueryBuilder<IterComponents..., const Component>(world, query);
+                return QueryBuilder<IterComponents..., const Component>(world, query, systemComponents);
             }
 
             template<typename ...Components>
@@ -71,14 +77,22 @@ namespace ecs {
 
             template<typename Func>
             requires std::invocable<Func, ZipSpan<IterComponents...>>
-            void each(Func&& func) {
-                world->system<IterComponents...>(func, query);
+            Entity each(Func&& func) {
+                Entity system = world->system<IterComponents...>(func, query);
+                for (Entity entity : systemComponents) {
+                    world->add(system, entity);
+                }
+                return system;
             }
 
             template<typename Func>
             requires std::invocable<Func, Iter, IterComponents*...>
-            void iter(Func&& func) {
-                world->systemIter<IterComponents...>(func, query);
+            Entity iter(Func&& func) {
+                Entity system = world->systemIter<IterComponents...>(func, query);
+                for (Entity entity : systemComponents) {
+                    world->add(system, entity);
+                }
+                return system;
             }
 
     };

@@ -15,14 +15,21 @@ namespace ecs {
     using EcsIter = ZipSpan<Components...>;
 
     class World;
+    class Observer;
 
     struct ComponentRecord {
         size_t size;
+        std::vector<Observer> onAdd;
+        std::vector<Observer> onRemove;
     };
 
     struct Iter {
-        u32 count;
-        World *world;
+        public:
+            u32 count;
+            World *world;
+            ArchetypeID archetypeID;
+            Iter(u32 count, World *world, ArchetypeID archetypeID)
+                : count(count), world(world), archetypeID(archetypeID) {}
     };
 
     struct QueryID {
@@ -72,6 +79,12 @@ namespace ecs {
             return this->id() <=> other.id();
         }
 
+        void print() const {
+            std::cout << "Entity(id: " << id()
+                      << ", index: " << index
+                      << ", generation: " << generation << ")";
+        }
+
         friend std::ostream& operator<<(std::ostream& os, const Entity& entity) {
             os << "Entity(id: " << entity.id()
                << ", index: " << entity.index
@@ -90,7 +103,9 @@ namespace ecs {
             data.push_back(entity);
         }
 
-        explicit Type(std::vector<Entity> d) : data(std::move(d)) {}
+        explicit Type(std::vector<Entity> d) : data(std::move(d)) {
+            this->sort();
+        }
 
         void addComponent(Entity entity) {
             data.push_back(entity);
@@ -106,6 +121,7 @@ namespace ecs {
             for (auto& term : type.data) {
                 addComponent(term);
             }
+            this->sort();
         }
 
         bool includes(Entity entity) {
@@ -161,6 +177,12 @@ namespace std {
                 h ^= hasher(e.id()) + 0x9e3779b9 + (h << 6) + (h >> 2);
             }
             return h;
+        }
+    };
+    template<>
+    struct hash<ecs::Entity> {
+        size_t operator()(const ecs::Entity& e) const noexcept {
+            return std::hash<uint64_t>{}(e.id());
         }
     };
 }

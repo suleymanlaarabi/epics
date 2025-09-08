@@ -19,6 +19,18 @@ namespace ecs {
     class World;
 
     using FuncType = void(*)(ArchetypeID, World *);
+    using ObserverFunc = void(*)(Entity, ArchetypeID, World *);
+
+    enum class ObserverType {
+        OnAdded,
+        OnRemoved,
+        OnChanged
+    };
+
+    class Observer {
+        QueryID query;
+        ObserverFunc func;
+    };
 
     class EcsFunc {
 
@@ -31,15 +43,21 @@ namespace ecs {
             }
     };
 
+
+
     struct RegisteredPlugin {};
     struct ChildOf {};
+    struct DependsOn {};
+
+    struct OnPreUpdate {};
+    struct OnUpdate {};
+    struct OnPostUpdate {};
 
     class Plugin {
         public:
             virtual ~Plugin() = default;
             virtual void build(ecs::World& world) = 0;
     };
-
 
     template<typename... IterComponents>
     class QueryBuilder;
@@ -52,13 +70,17 @@ namespace ecs {
         std::unordered_map<Type, ArchetypeID> archetype_map;
         std::vector<Query> queries;
         std::unordered_map<Query, QueryID, QueryHash> query_map;
-        QueryID systems_query;
+
+        QueryID onPreUpdateSystemsQuery;
+        QueryID onUpdateSystemsQuery;
+        QueryID onPostUpdateSystemsQuery;
 
         private:
             ArchetypeID getOrCreateArchetypeID(Type type);
             void migrateEntity(ArchetypeID oldArchetypeID, ArchetypeID newArchetypeID, size_t oldRow);
             Query &getSystemsQuery();
             std::vector<ArchetypeID> &getQueryMatchedArchetypes(QueryID queryID);
+            void runSystemsPhase(QueryID phase);
 
             template<typename ...Components>
             Type createType() {
@@ -79,8 +101,7 @@ namespace ecs {
                         query.addArchetype(i);
                     }
                 }
-
-                query_map[newQuery] = QueryID {queries.size() - 1};
+                query_map[query] = QueryID {queries.size() - 1};
 
                 return QueryID {queries.size() - 1};
             }
@@ -97,6 +118,7 @@ namespace ecs {
             Entity entity(size_t size);
             void pair(Entity entity, Entity relation, Entity target);
             void childOf(Entity child, Entity parent);
+            void dependsOn(Entity entity, Entity target);
             Entity relation(Entity relation, Entity target);
             void kill(Entity entity);
             bool has(Entity entity, Entity component);
@@ -108,8 +130,9 @@ namespace ecs {
             std::vector<ArchetypeID> &getSystems();
             Archetype *getArchetype(ArchetypeID archetypeID);
             Archetype *getArchetype(Entity entity);
-            void registerSystem(FuncType func, QueryID query);
+            Entity registerSystem(FuncType func, QueryID query);
             void progress();
+            void run();
 
             World();
 
@@ -128,6 +151,24 @@ namespace ecs {
                 add<RegisteredPlugin>(pluginEntity);
 
                 plugin.build(*this);
+            }
+
+            template<typename Component>
+            void singleton() {
+                add<Component>(component<Component>());
+            }
+
+            template<typename Component>
+            Component *getSingleton() {
+                Entity entity = component<Component>();
+                EntityRecord *record = entity_manager.getRecord(entity.index);
+
+                return static_cast<Component *>(archetypes[record->archetype].getRawComponent(record->row, entity));
+            }
+
+            template<typename Component>
+            void setSingleton(Component *value) {
+                set(component<Component>(), value);
             }
 
             template<typename ...Components>
@@ -150,14 +191,15 @@ namespace ecs {
             }
 
             template<typename ...Components>
-            void registerSystem(FuncType func) {
+            Entity registerSystem(FuncType func) {
                 QueryID queryID = query<Components...>();
-                registerSystem(func, queryID);
+                return registerSystem(func, queryID);
             }
+
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, ZipSpan<Components...>>
-            void system(Func&& func, Query query) {
+            Entity system(Func&& func, Query query) {
                 static Func userFunc = std::forward<Func>(func);
 
                 FuncType invoker = [](ArchetypeID archetypeID, World* world) {
@@ -166,7 +208,7 @@ namespace ecs {
 
                 query.mergeTerms(createType<Components...>());
 
-                registerSystem(invoker, registerQuery(query));
+                return registerSystem(invoker, registerQuery(query));
             }
 
 
@@ -177,16 +219,13 @@ namespace ecs {
 
             template<typename... Components, typename Func>
             requires std::invocable<Func, Iter, Components*...>
-            void systemIter(Func&& func, Query query) {
+            Entity systemIter(Func&& func, Query query) {
                 static Func userFunc = std::forward<Func>(func);
 
                 FuncType invoker = [](ArchetypeID archetypeID, World* world) {
                     Archetype *archetype = &world->archetypes[archetypeID];
                     std::invoke(userFunc,
-                        Iter {
-                            .count = archetype->entityCount(),
-                            .world = world
-                        },
+                        Iter(archetype->entityCount(), world, archetypeID),
                         reinterpret_cast<Components* __restrict>(
                             archetype->getRawComponent(0, world->component<Components>())
                         )...
@@ -195,7 +234,7 @@ namespace ecs {
 
                 query.mergeTerms(createType<Components...>());
 
-                registerSystem(invoker, registerQuery(query));
+                return registerSystem(invoker, registerQuery(query));
             }
 
             template<typename Component>
@@ -238,9 +277,18 @@ namespace ecs {
             }
 
             template<typename Component>
+            void dependsOn(Entity entity) {
+                Entity componentEntity = component<Component>();
+                dependsOn(entity, componentEntity);
+            }
+
+            template<typename Component>
             void set(Entity entity, Component&& value) {
                 Entity componentEntity = component<Component>();
-                set(entity, componentEntity, static_cast<void*>(&value));
+
+                auto *storage = new Component(std::forward<Component>(value));
+
+                set(entity, componentEntity, static_cast<void*>(storage));
             }
 
             template<typename Component>

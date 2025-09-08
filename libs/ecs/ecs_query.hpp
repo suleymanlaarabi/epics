@@ -1,6 +1,6 @@
 #pragma once
 #include <ecs_type.hpp>
-#include <set>
+#include <unordered_set>
 #include <vector>
 
 namespace ecs {
@@ -16,10 +16,9 @@ namespace ecs {
         public:
             Type terms;
             Type notTerms;
-            std::set<Entity> read_access;
-            std::set<Entity> none_access;
+            std::unordered_set<Entity> read_access;
+            std::unordered_set<Entity> none_access;
             std::vector<ArchetypeID> matches;
-
             Query() = default;
             Query(Type terms) : terms(std::move(terms)) {}
             Query(Type terms, Type notTerms) : terms(std::move(terms)), notTerms(std::move(notTerms)) {}

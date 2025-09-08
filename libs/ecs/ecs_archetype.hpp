@@ -33,6 +33,7 @@ namespace ecs {
 
         void print() {
             std::cout << "Entity Count: " << entities_indices.size() << std::endl;
+            type.print();
         }
 
         inline void register_component(Entity entity, size_t size) {

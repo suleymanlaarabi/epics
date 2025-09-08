@@ -6,8 +6,12 @@
 using namespace ecs;
 
 World::World() {
-    auto q = query<QueryID, EcsFunc>();
-    systems_query = q;
+    component<OnPreUpdate>();
+    component<OnUpdate>();
+    component<OnPostUpdate>();
+    onPreUpdateSystemsQuery = query<QueryID, EcsFunc, OnPreUpdate>();
+    onUpdateSystemsQuery = query<QueryID, EcsFunc, OnUpdate>();
+    onPostUpdateSystemsQuery = query<QueryID, EcsFunc, OnPostUpdate>();
 }
 
 ArchetypeID World::getOrCreateArchetypeID(Type type) {
@@ -153,14 +157,6 @@ std::vector<ArchetypeID> &World::getQueryMatchedArchetypes(QueryID queryID) {
     return queries[queryID.id].matches;
 }
 
-std::vector<ArchetypeID> &World::getSystems() {
-    return queries[systems_query.id].matches;
-}
-
-Query &World::getSystemsQuery() {
-    return queries[systems_query.id];
-}
-
 Archetype *World::getArchetype(ArchetypeID archetypeID) {
     return &archetypes[archetypeID];
 }
@@ -171,25 +167,31 @@ Archetype *World::getArchetype(Entity entity) {
     return &archetypes[record->archetype];
 }
 
-void World::registerSystem(FuncType func, QueryID query) {
+Entity World::registerSystem(FuncType func, QueryID query) {
     Entity system = entity();
-
 
     set<EcsFunc>(system, EcsFunc(func));
     set<QueryID>(system, QueryID(query.id));
+    return system;
 }
 
-void World::progress() {
-    std::vector<ecs::ArchetypeID> &archetypes = getSystems();
+void World::runSystemsPhase(QueryID phase) {
+    std::vector<ecs::ArchetypeID> &archetypes = queries[phase.id].matches;
+
     for (auto archetypeID : archetypes) {
         auto zip = iter<ecs::EcsFunc, ecs::QueryID>(archetypeID);
-
         for (auto [func, query] : zip) {
             for (auto archetypeID : getQueryMatchedArchetypes(query)) {
                 func.func(archetypeID, this);
             }
         }
     }
+}
+
+void World::progress() {
+    runSystemsPhase(onPreUpdateSystemsQuery);
+    runSystemsPhase(onUpdateSystemsQuery);
+    runSystemsPhase(onPostUpdateSystemsQuery);
 }
 
 void World::pair(Entity entity, Entity relation, Entity target) {
@@ -202,6 +204,16 @@ void World::childOf(Entity child, Entity parent) {
     pair(child, ChildOfRelation, parent);
 }
 
+void World::dependsOn(Entity entity, Entity target) {
+    pair(entity, component<DependsOn>(), target);
+}
+
 Entity World::relation(Entity relation, Entity target) {
     return relation.makePair(target);
+}
+
+void World::run() {
+    while (true) {
+        progress();
+    }
 }
